@@ -49,3 +49,59 @@ body {
 .btn:hover {
   transform: translateY(-3px);
 }
+
+
+/* ======================
+   CREATE QUIZ PAGE
+====================== */
+
+.create-page {
+  width: 100%;
+  max-width: 480px;
+  padding: 40px 24px;
+}
+
+.back-btn {
+  display: inline-block;
+  margin-bottom: 40px;
+  font-size: 24px;
+  color: #0f172a;
+  text-decoration: none;
+}
+
+.create-page h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 40px;
+}
+
+.quiz-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.quiz-form input,
+.quiz-form textarea {
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: none;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+  outline: none;
+}
+
+.quiz-form textarea {
+  resize: none;
+}
+
+.quiz-form input::placeholder,
+.quiz-form textarea::placeholder {
+  color: #6b7280;
+}
+
+.quiz-form .btn {
+  margin-top: 20px;
+}
