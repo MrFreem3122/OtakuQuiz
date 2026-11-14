@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Animer une partie | OtaKu Quiz</title>
+  <meta name="theme-color" content="#a9b6e8" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+
+  <!-- connecting -->
+  <main class="page center" data-view="loading">
+    <div class="logo" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+    <div class="spinner" role="status" aria-label="Chargement"></div>
+    <p class="wait-text" id="loadingText">Création de la partie…</p>
+    <div class="stack-sm" id="loadingError" hidden>
+      <p class="error-msg" id="loadingErrorText"></p>
+      <a class="btn" href="quizzes.html">Retour à mes quiz</a>
+    </div>
+  </main>
+
+  <!-- lobby -->
+  <main class="page" data-view="lobby" hidden>
+    <div class="logo logo-sm" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+    <p class="subtitle" data-bind="title"></p>
+
+    <div class="card code-box">
+      <div class="hint">Code de la partie</div>
+      <div class="code" id="roomCode"></div>
+      <div class="hint" id="shareLink" style="overflow-wrap:anywhere"></div>
+    </div>
+
+    <div class="row" style="margin:16px 0 24px">
+      <button class="btn btn-whatsapp" type="button" id="shareWhatsApp"><span data-icon="whatsapp"></span> WhatsApp</button>
+      <button class="btn btn-light" type="button" id="copyLink"><span data-icon="copy"></span> Copier</button>
+    </div>
+
+    <h2>Joueurs connectés <span class="muted" id="playerCount"></span></h2>
+    <ul class="list" id="lobbyPlayers"></ul>
+    <p class="hint" id="noPlayers" style="text-align:center;margin-top:8px">Personne pour l'instant. Partage le code ou le lien.</p>
+
+    <div class="stack-sm push-bottom">
+      <button class="btn" type="button" id="startBtn" disabled>Lancer la partie</button>
+      <button class="btn btn-ghost" type="button" data-action="close">Fermer la partie</button>
+    </div>
+  </main>
+
+  <!-- question running -->
+  <main class="page" data-view="question" hidden>
+    <div class="q-meta">
+      <span id="qCounter"></span>
+      <span class="timer" id="qTimer" aria-live="off"></span>
+    </div>
+    <div class="timebar"><span id="qBar"></span></div>
+
+    <div class="q-image" id="qImage" hidden><img alt="" /></div>
+    <p class="q-text" id="qText"></p>
+    <div class="stack-sm" id="qChoices"></div>
+
+    <div class="card" style="margin-top:20px;text-align:center">
+      <div class="progress-big" id="qProgress">0 / 0</div>
+      <div class="hint">ont répondu</div>
+      <ul class="list" id="qAnswered" style="margin-top:12px"></ul>
+    </div>
+
+    <div class="stack-sm push-bottom">
+      <button class="btn" type="button" id="skipBtn">Arrêter le chrono</button>
+    </div>
+  </main>
+
+  <!-- review answers -->
+  <main class="page" data-view="review" hidden>
+    <p class="hint" id="rCounter" style="text-align:center"></p>
+    <p class="q-text" id="rText"></p>
+    <div class="card result-good" style="text-align:center;margin-bottom:16px">
+      <div class="hint" style="color:inherit">Bonne réponse</div>
+      <strong id="rCorrect" style="font-size:20px"></strong>
+    </div>
+
+    <h2>Réponses des joueurs</h2>
+    <p class="hint" id="rHint" style="margin-bottom:10px"></p>
+    <ul class="list" id="rRows"></ul>
+
+    <div class="stack-sm push-bottom">
+      <button class="btn" type="button" id="revealBtn">Afficher les résultats</button>
+    </div>
+  </main>
+
+  <!-- leaderboard after a question -->
+  <main class="page" data-view="results" hidden>
+    <p class="hint" id="resCounter" style="text-align:center"></p>
+    <h1 style="margin-bottom:16px">Classement</h1>
+    <ol class="board" id="resBoard"></ol>
+    <div class="stack-sm push-bottom">
+      <button class="btn" type="button" id="nextBtn">Question suivante</button>
+    </div>
+  </main>
+
+  <!-- final -->
+  <main class="page" data-view="final" hidden>
+    <div class="logo logo-sm" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+    <h1 style="margin-bottom:8px">Fin de la partie</h1>
+    <p class="subtitle" data-bind="title" style="font-size:18px;font-weight:500"></p>
+    <div class="podium" id="finalPodium"></div>
+    <ol class="board" id="finalBoard"></ol>
+    <div class="stack-sm push-bottom">
+      <a class="btn" href="quizzes.html">Retour à mes quiz</a>
+      <button class="btn btn-ghost" type="button" id="replayBtn">Rejouer ce quiz</button>
+    </div>
+  </main>
+
+  <!-- closed -->
+  <main class="page center" data-view="closed" hidden>
+    <div class="logo" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+    <p class="wait-text" id="closedText">La partie est fermée.</p>
+    <a class="btn" href="quizzes.html">Retour à mes quiz</a>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/host.js"></script>
+</body>
+</html>

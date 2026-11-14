@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Rejoindre un Quiz | OtaKu Quiz</title>
+  <meta name="description" content="Rejoins une partie de quiz otaku en direct avec le code de l'animateur." />
+  <meta name="theme-color" content="#a9b6e8" />
+  <meta property="og:title" content="Rejoins la partie sur OtaKu Quiz 🧠" />
+  <meta property="og:description" content="Quiz otaku en direct entre amis. Entre ton pseudo et c'est parti." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+
+  <!-- join form -->
+  <main class="page" data-view="join">
+    <div class="topbar"><a class="back" href="index.html" aria-label="Retour à l'accueil" data-icon="back"></a></div>
+    <div class="logo logo-sm" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+
+    <form class="stack" id="joinForm" novalidate>
+      <div class="field">
+        <label for="code">Quiz code</label>
+        <div class="input-wrap">
+          <input class="input input-code input-with-icon" id="code" maxlength="8" placeholder="Entrez le code du Quiz…" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+          <button class="icon-btn" type="button" id="pasteBtn" aria-label="Coller le code ou le lien" title="Coller" data-icon="copy"></button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="link">Lien du Quiz</label>
+        <div class="input-wrap">
+          <input class="input input-with-icon" id="link" placeholder="Ou collez le lien du Quiz…" autocomplete="off" inputmode="url" />
+          <span class="icon-btn" aria-hidden="true" data-icon="link" style="pointer-events:none"></span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="name">Ton pseudo</label>
+        <input class="input" id="name" maxlength="20" placeholder="Ex. : Zoro" autocomplete="nickname" />
+      </div>
+
+      <p class="error-msg" id="joinError" hidden></p>
+      <button class="btn" type="submit" id="joinBtn">Rejoindre</button>
+    </form>
+  </main>
+
+  <!-- lobby -->
+  <main class="page" data-view="lobby" hidden>
+    <div class="logo logo-sm" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+    <p class="subtitle" data-bind="title"></p>
+
+    <h2>Joueurs connectés</h2>
+    <ul class="list" id="lobbyPlayers"></ul>
+
+    <p class="wait-text">En attente du créateur pour lancer la partie…</p>
+
+    <div class="push-bottom">
+      <button class="btn" type="button" id="leaveBtn">Quitter</button>
+    </div>
+  </main>
+
+  <!-- question -->
+  <main class="page" data-view="question" hidden>
+    <div class="q-meta">
+      <span id="qCounter"></span>
+      <span class="timer" id="qTimer" aria-live="off"></span>
+    </div>
+    <div class="timebar"><span id="qBar"></span></div>
+
+    <div class="q-image" id="qImage" hidden><img alt="" /></div>
+    <p class="q-text" id="qText"></p>
+
+    <div class="answers" id="qAnswers"></div>
+
+    <form class="stack-sm" id="textForm" hidden novalidate>
+      <label class="sr-only" for="textAnswer">Ta réponse</label>
+      <input class="input" id="textAnswer" maxlength="120" placeholder="Ta réponse…" autocomplete="off" />
+      <button class="btn" type="submit">Valider</button>
+    </form>
+  </main>
+
+  <!-- waiting after answering / time up -->
+  <main class="page center" data-view="wait" hidden>
+    <div class="card status-card">
+      <div class="big" id="waitIcon">⏳</div>
+      <h2 id="waitTitle">Réponse envoyée !</h2>
+      <p class="muted" id="waitText">En attente des autres joueurs…</p>
+    </div>
+  </main>
+
+  <!-- result of a question -->
+  <main class="page" data-view="results" hidden>
+    <div class="card status-card" id="resCard">
+      <div class="big" id="resIcon"></div>
+      <h2 id="resTitle"></h2>
+      <p id="resAnswer"></p>
+      <div class="points" id="resPoints"></div>
+    </div>
+    <p style="text-align:center;margin:16px 0" id="resRank"></p>
+    <ol class="board" id="resBoard"></ol>
+    <p class="wait-text" id="resNext">En attente de la question suivante…</p>
+  </main>
+
+  <!-- final -->
+  <main class="page" data-view="final" hidden>
+    <div class="logo logo-sm" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+    <h1 style="margin-bottom:6px">Fin de la partie</h1>
+    <p class="subtitle" id="finalRank" style="font-size:20px"></p>
+    <div class="podium" id="finalPodium"></div>
+    <ol class="board" id="finalBoard"></ol>
+    <div class="push-bottom">
+      <a class="btn" href="index.html">Retour à l'accueil</a>
+    </div>
+  </main>
+
+  <!-- closed / kicked -->
+  <main class="page center" data-view="closed" hidden>
+    <div class="logo" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+    <p class="wait-text" id="closedText">La partie est terminée.</p>
+    <a class="btn" href="join.html">Rejoindre une autre partie</a>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/play.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "otakuquiz",
+  "version": "1.0.0",
+  "description": "Quiz otaku en direct entre amis : un animateur, des joueurs sur leur téléphone.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

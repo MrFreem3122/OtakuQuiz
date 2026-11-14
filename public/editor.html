@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Créer un Quiz | OtaKu Quiz</title>
+  <meta name="theme-color" content="#a9b6e8" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+
+  <!-- 1. Name and description -->
+  <main class="page" data-view="info">
+    <div class="topbar"><a class="back" href="quizzes.html" aria-label="Retour à mes quiz" data-icon="back"></a></div>
+    <div class="logo logo-sm" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+    <h1 id="infoTitle">Créer un Quiz</h1>
+
+    <form class="stack" id="infoForm" novalidate>
+      <div class="field">
+        <label class="sr-only" for="quizTitle">Nom du Quiz</label>
+        <input class="input" id="quizTitle" maxlength="80" placeholder="Nom du Quiz" required autocomplete="off" />
+      </div>
+      <div class="field">
+        <label class="sr-only" for="quizDescription">Description</label>
+        <textarea class="textarea" id="quizDescription" maxlength="300" placeholder="Description (optionnel)"></textarea>
+      </div>
+      <p class="error-msg" id="infoError" hidden></p>
+      <button class="btn" type="submit">Suivant</button>
+    </form>
+  </main>
+
+  <!-- 2. Questions list -->
+  <main class="page" data-view="list" hidden>
+    <div class="topbar">
+      <button class="back" type="button" aria-label="Modifier le nom du quiz" data-icon="back" id="listBack"></button>
+    </div>
+    <div class="logo logo-sm" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+    <p class="banner-title" id="listTitle"></p>
+
+    <ul class="list" id="questionList"></ul>
+    <div class="empty card" id="noQuestions">
+      <p><strong>Pas encore de question.</strong></p>
+      <p class="muted">Ajoute ta première question ci-dessous.</p>
+    </div>
+
+    <div class="stack-sm push-bottom">
+      <button class="btn" type="button" id="addQuestion">Ajouter Question <span data-icon="plus"></span></button>
+      <a class="btn btn-light" href="quizzes.html" id="doneBtn">Terminer</a>
+      <button class="btn btn-ghost" type="button" id="deleteQuiz" hidden>Supprimer ce quiz</button>
+    </div>
+  </main>
+
+  <!-- 3. Question type -->
+  <main class="page" data-view="type" hidden>
+    <div class="topbar"><button class="back" type="button" aria-label="Retour aux questions" data-icon="back" data-go="list"></button></div>
+    <div class="logo logo-sm" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+    <p class="banner-title">Type de Question</p>
+
+    <form id="typeForm" class="stack">
+      <fieldset class="stack-sm" style="border:0">
+        <legend class="sr-only">Type de question</legend>
+        <label class="card choice-row"><span class="label">Choix multiple</span><input type="radio" name="qtype" value="mcq" checked /></label>
+        <label class="card choice-row"><span class="label">Vrai / Faux</span><input type="radio" name="qtype" value="truefalse" /></label>
+        <label class="card choice-row"><span class="label">Réponse Libre</span><input type="radio" name="qtype" value="text" /></label>
+      </fieldset>
+      <button class="btn" type="submit">Suivant</button>
+    </form>
+  </main>
+
+  <!-- 4. Question form -->
+  <main class="page" data-view="question" hidden>
+    <div class="topbar"><button class="back" type="button" aria-label="Annuler et revenir aux questions" data-icon="back" data-go="list"></button></div>
+    <p class="banner-title" id="qFormTitle">Question</p>
+
+    <form class="stack" id="questionForm" novalidate>
+      <div class="field field-left">
+        <label for="qText">Question</label>
+        <textarea class="textarea" id="qText" maxlength="300" placeholder="Ex. : Dans quel arc Ace meurt-il ?" style="min-height:100px"></textarea>
+      </div>
+
+      <div class="field field-left">
+        <span style="font-weight:600">Image (optionnel)</span>
+        <div class="image-preview" id="imagePreview" hidden>
+          <img alt="Image de la question" />
+          <button class="icon-btn" type="button" id="removeImage" aria-label="Retirer l'image" data-icon="close"></button>
+        </div>
+        <label class="btn btn-light file-btn" id="imagePick">
+          <span data-icon="image"></span> Ajouter une image
+          <input type="file" accept="image/*" id="imageInput" />
+        </label>
+      </div>
+
+      <!-- multiple choice -->
+      <div class="field field-left" data-for="mcq">
+        <span style="font-weight:600">Réponses <span class="hint">(coche la bonne réponse)</span></span>
+        <div class="stack-sm" id="choices"></div>
+      </div>
+
+      <!-- true / false -->
+      <fieldset class="field field-left" data-for="truefalse" style="border:0">
+        <legend style="font-weight:600;margin-bottom:8px">Bonne réponse</legend>
+        <div class="row">
+          <label class="card choice-row"><span class="label">Vrai</span><input type="radio" name="tf" value="true" checked /></label>
+          <label class="card choice-row"><span class="label">Faux</span><input type="radio" name="tf" value="false" /></label>
+        </div>
+      </fieldset>
+
+      <!-- free text -->
+      <div class="field field-left" data-for="text">
+        <label for="qAnswers">Réponses acceptées</label>
+        <input class="input" id="qAnswers" maxlength="400" placeholder="Ex. : Marineford, Marine Ford" autocomplete="off" />
+        <p class="hint">Sépare les variantes par des virgules. Les majuscules et les accents ne comptent pas, et tu pourras valider une réponse proche pendant la partie.</p>
+      </div>
+
+      <div class="field field-left">
+        <label for="qDuration">Temps pour répondre</label>
+        <select class="select" id="qDuration">
+          <option value="10">10 secondes</option>
+          <option value="15">15 secondes</option>
+          <option value="20" selected>20 secondes</option>
+          <option value="30">30 secondes</option>
+          <option value="45">45 secondes</option>
+          <option value="60">1 minute</option>
+        </select>
+      </div>
+
+      <p class="error-msg" id="qError" hidden></p>
+      <button class="btn" type="submit" id="saveQuestion">Enregistrer la question</button>
+    </form>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script src="js/editor.js"></script>
+</body>
+</html>

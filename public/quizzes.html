@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Mes Quiz | OtaKu Quiz</title>
+  <meta name="theme-color" content="#a9b6e8" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+  <main class="page">
+    <div class="topbar">
+      <a class="back" href="index.html" aria-label="Retour à l'accueil" id="backBtn"></a>
+    </div>
+
+    <h1>Mes Quiz</h1>
+
+    <ul class="list" id="quizList"></ul>
+
+    <div class="empty card" id="empty" hidden>
+      <p><strong>Aucun quiz pour l'instant.</strong></p>
+      <p class="muted">Crée ton premier quiz, puis lance une partie avec tes amis.</p>
+    </div>
+
+    <div class="stack-sm push-bottom">
+      <a class="btn" href="editor.html">Créer Quiz</a>
+      <label class="btn btn-ghost file-btn">
+        Importer un quiz (fichier)
+        <input type="file" accept=".json,application/json" id="importInput" />
+      </label>
+    </div>
+
+    <p class="hint" style="text-align:center;margin-top:8px">
+      Tes quiz sont enregistrés dans ce navigateur. Utilise le bouton partager pour les sauvegarder ou les envoyer.
+    </p>
+  </main>
+
+  <script src="js/common.js"></script>
+  <script>
+    $("#backBtn").append(icon("back"));
+
+    function render() {
+      const quizzes = Store.all();
+      $("#empty").hidden = quizzes.length > 0;
+      $("#quizList").replaceChildren(
+        ...quizzes.map((q) => {
+          const firstImage = (q.questions || []).find((x) => x.image)?.image;
+          const n = (q.questions || []).length;
+          return el("li", { class: "card quiz-card" },
+            el("div", { class: "thumb" }, firstImage ? el("img", { src: firstImage, alt: "" }) : icon("image")),
+            el("h3", {}, q.title || "Sans titre"),
+            el("div", { class: "actions" },
+              el("a", { class: "icon-btn", href: `editor.html?id=${q.id}`, "aria-label": `Modifier ${q.title}`, title: "Modifier" }, icon("edit")),
+              el("div", { class: "row-icons" },
+                n
+                  ? el("a", { class: "icon-btn", href: `host.html?quiz=${q.id}`, "aria-label": `Lancer une partie avec ${q.title}`, title: "Lancer une partie" }, icon("play"))
+                  : null,
+                el("button", { class: "icon-btn", type: "button", "aria-label": `Partager ${q.title}`, title: "Partager le fichier du quiz", onclick: () => exportQuiz(q) }, icon("share"))
+              )
+            ),
+            el("div", { class: "count" }, n === 0 ? "Aucune question" : n === 1 ? "1 question" : `${n} questions`)
+          );
+        })
+      );
+    }
+
+    $("#importInput").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const quiz = await importQuizFile(file);
+        toast(`« ${quiz.title} » ajouté à tes quiz.`);
+        render();
+      } catch (err) {
+        toast(err.message || "Import impossible.");
+      }
+      e.target.value = "";
+    });
+
+    render();
+  </script>
+</body>
+</html>
