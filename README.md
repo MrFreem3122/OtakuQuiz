@@ -1,5 +1,7 @@
 # OtaKu Quiz 🧠
 
+🎮 **Jouer : https://otakuquiz-zlnr.onrender.com**
+
 Quiz otaku en direct entre amis. Un animateur crée un quiz, partage un code ou un lien sur WhatsApp, et chacun joue depuis son téléphone, même depuis un autre pays.
 
 ## Comment ça marche
@@ -36,7 +38,9 @@ Le jeu a besoin d'une connexion en temps réel (WebSocket), ce que Vercel ne gè
 
 1. Crée un compte sur https://render.com avec GitHub.
 2. **New → Blueprint**, choisis ce dépôt : Render lit `render.yaml` et crée le service.
-3. L'app est disponible sur `https://otakuquiz.onrender.com` (ou un nom proche).
+3. L'app est en ligne sur https://otakuquiz-zlnr.onrender.com.
+
+Le dépôt est relié par son URL publique : après un push, lance **Manual Deploy → Deploy latest commit** dans Render (ou connecte GitHub à Render pour les déploiements automatiques).
 
 Sur l'offre gratuite, le serveur se met en veille après 15 minutes sans visite : la première ouverture prend environ 30 secondes. Ouvre le site quelques instants avant de lancer une partie.
 
