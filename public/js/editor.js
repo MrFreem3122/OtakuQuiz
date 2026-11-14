@@ -4,20 +4,27 @@ $$("[data-icon]").forEach((n) => n.append(icon(n.dataset.icon)));
 $$("[data-go]").forEach((n) => n.addEventListener("click", () => show(n.dataset.go)));
 
 const params = new URLSearchParams(location.search);
-let quiz = (params.get("id") && Store.get(params.get("id"))) || null;
-const isNew = !quiz;
-if (!quiz) quiz = { id: Store.newId(), title: "", description: "", questions: [] };
+let quiz = null;
+let isNew = true;
+
+// Save the quiz to the shared library. Returns true when it worked.
+async function persist() {
+  try {
+    quiz.thumb = await makeThumb(quiz);
+    await Api.save(quiz);
+    return true;
+  } catch (err) {
+    toast(err.message);
+    return false;
+  }
+}
 
 let editingIndex = -1; // -1 = new question
 let draft = null;
 
 /* ---------- 1. info ---------- */
 
-$("#quizTitle").value = quiz.title;
-$("#quizDescription").value = quiz.description || "";
-if (!isNew) $("#infoTitle").textContent = "Modifier le Quiz";
-
-$("#infoForm").addEventListener("submit", (e) => {
+$("#infoForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const title = $("#quizTitle").value.trim();
   if (!title) {
@@ -29,7 +36,7 @@ $("#infoForm").addEventListener("submit", (e) => {
   $("#infoError").hidden = true;
   quiz.title = title;
   quiz.description = $("#quizDescription").value.trim();
-  Store.save(quiz);
+  if (!(await persist())) return;
   history.replaceState(null, "", `editor.html?id=${quiz.id}`);
   renderList();
   show("list");
@@ -58,10 +65,10 @@ function renderList() {
   );
 }
 
-function removeQuestion(i) {
+async function removeQuestion(i) {
   if (!confirm(`Supprimer la question ${i + 1} ?`)) return;
-  quiz.questions.splice(i, 1);
-  Store.save(quiz);
+  const removed = quiz.questions.splice(i, 1);
+  if (!(await persist())) quiz.questions.splice(i, 0, ...removed);
   renderList();
 }
 
@@ -71,10 +78,15 @@ $("#addQuestion").addEventListener("click", () => {
   show("type");
 });
 
-$("#deleteQuiz").addEventListener("click", () => {
-  if (!confirm(`Supprimer le quiz « ${quiz.title} » ? Cette action est définitive.`)) return;
-  Store.remove(quiz.id);
-  location.href = "quizzes.html";
+$("#deleteQuiz").addEventListener("click", async () => {
+  const by = quiz.author && quiz.author !== Admin.name() ? ` (créé par ${quiz.author})` : "";
+  if (!confirm(`Supprimer le quiz « ${quiz.title} »${by} pour tous les admins ? Cette action est définitive.`)) return;
+  try {
+    await Api.remove(quiz.id);
+    location.href = "quizzes.html";
+  } catch (err) {
+    toast(err.message);
+  }
 });
 
 /* ---------- 3. type ---------- */
@@ -155,7 +167,7 @@ $("#removeImage").addEventListener("click", () => {
   renderImage();
 });
 
-$("#questionForm").addEventListener("submit", (e) => {
+$("#questionForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fail = (msg) => {
     $("#qError").textContent = msg;
@@ -183,9 +195,16 @@ $("#questionForm").addEventListener("submit", (e) => {
     if (!out.answers.length) return fail("Ajoute au moins une réponse acceptée.");
   }
 
+  const previous = editingIndex >= 0 ? quiz.questions[editingIndex] : null;
   if (editingIndex >= 0) quiz.questions[editingIndex] = out;
   else quiz.questions.push(out);
-  if (!Store.save(quiz)) return;
+  $("#saveQuestion").disabled = true;
+  const ok = await persist();
+  $("#saveQuestion").disabled = false;
+  if (!ok) {
+    if (previous) quiz.questions[editingIndex] = previous; else quiz.questions.pop();
+    return;
+  }
   renderList();
   show("list");
   toast("Question enregistrée.");
@@ -193,5 +212,23 @@ $("#questionForm").addEventListener("submit", (e) => {
 
 /* ---------- start ---------- */
 
-if (isNew) show("info");
-else { renderList(); show("list"); }
+(async () => {
+  if (!requireAdmin()) return;
+  const id = params.get("id");
+  if (id) {
+    try {
+      quiz = await Api.get(id);
+      isNew = false;
+    } catch (err) {
+      toast(err.message);
+    }
+  }
+  if (!quiz) quiz = { id: newQuizId(), title: "", description: "", questions: [] };
+
+  $("#quizTitle").value = quiz.title;
+  $("#quizDescription").value = quiz.description || "";
+  if (!isNew) $("#infoTitle").textContent = "Modifier le Quiz";
+
+  if (isNew) show("info");
+  else { renderList(); show("list"); }
+})();

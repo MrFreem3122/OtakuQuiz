@@ -12,19 +12,56 @@
   <link rel="stylesheet" href="css/app.css" />
 </head>
 <body>
-  <main class="page">
+
+  <!-- admin login -->
+  <main class="page" data-view="login" hidden>
+    <div class="topbar"><a class="back" href="index.html" aria-label="Retour à l'accueil" data-icon="back"></a></div>
+    <div class="logo logo-sm" aria-hidden="true"><span class="brain">🧠</span><span>OtaKu</span></div>
+    <h1>Espace admin</h1>
+
+    <form class="stack" id="loginForm" novalidate>
+      <div class="field">
+        <label for="adminCode">Code admin</label>
+        <input class="input" id="adminCode" type="password" autocomplete="current-password" placeholder="Code donné par la communauté" />
+      </div>
+      <div class="field">
+        <label for="adminName">Ton nom</label>
+        <input class="input" id="adminName" maxlength="40" autocomplete="nickname" placeholder="Affiché sur les quiz que tu crées" />
+      </div>
+      <p class="error-msg" id="loginError" hidden></p>
+      <button class="btn" type="submit" id="loginBtn">Entrer</button>
+    </form>
+
+    <p class="hint push-bottom" style="text-align:center">
+      Pour jouer, pas besoin de code : utilise <a href="join.html">Joindre Quiz</a> avec le code de la partie.
+    </p>
+  </main>
+
+  <!-- shared library -->
+  <main class="page" data-view="list" hidden>
     <div class="topbar">
-      <a class="back" href="index.html" aria-label="Retour à l'accueil" id="backBtn"></a>
+      <a class="back" href="index.html" aria-label="Retour à l'accueil" data-icon="back"></a>
+      <span class="hint" style="margin-left:auto" id="whoami"></span>
+      <button class="btn btn-ghost" type="button" id="logoutBtn" style="width:auto;padding:0 8px">Se déconnecter</button>
     </div>
 
     <h1>Mes Quiz</h1>
 
+    <div class="card stack-sm" id="migrateBox" hidden style="margin-bottom:16px">
+      <p><strong id="migrateText"></strong></p>
+      <p class="hint">Ils ont été créés avec la première version de l'app. Ajoute-les à la bibliothèque pour que tous les admins puissent les utiliser.</p>
+      <button class="btn btn-light" type="button" id="migrateBtn">Ajouter à la bibliothèque</button>
+    </div>
+
+    <div class="spinner" id="listLoading" role="status" aria-label="Chargement"></div>
     <ul class="list" id="quizList"></ul>
 
     <div class="empty card" id="empty" hidden>
-      <p><strong>Aucun quiz pour l'instant.</strong></p>
-      <p class="muted">Crée ton premier quiz, puis lance une partie avec tes amis.</p>
+      <p><strong>La bibliothèque est vide.</strong></p>
+      <p class="muted">Crée le premier quiz de la communauté.</p>
     </div>
+
+    <p class="error-msg" id="listError" hidden></p>
 
     <div class="stack-sm push-bottom">
       <a class="btn" href="editor.html">Créer Quiz</a>
@@ -35,53 +72,11 @@
     </div>
 
     <p class="hint" style="text-align:center;margin-top:8px">
-      Tes quiz sont enregistrés dans ce navigateur. Utilise le bouton partager pour les sauvegarder ou les envoyer.
+      Les quiz sont partagés entre tous les admins de la communauté.
     </p>
   </main>
 
   <script src="js/common.js"></script>
-  <script>
-    $("#backBtn").append(icon("back"));
-
-    function render() {
-      const quizzes = Store.all();
-      $("#empty").hidden = quizzes.length > 0;
-      $("#quizList").replaceChildren(
-        ...quizzes.map((q) => {
-          const firstImage = (q.questions || []).find((x) => x.image)?.image;
-          const n = (q.questions || []).length;
-          return el("li", { class: "card quiz-card" },
-            el("div", { class: "thumb" }, firstImage ? el("img", { src: firstImage, alt: "" }) : icon("image")),
-            el("h3", {}, q.title || "Sans titre"),
-            el("div", { class: "actions" },
-              el("a", { class: "icon-btn", href: `editor.html?id=${q.id}`, "aria-label": `Modifier ${q.title}`, title: "Modifier" }, icon("edit")),
-              el("div", { class: "row-icons" },
-                n
-                  ? el("a", { class: "icon-btn", href: `host.html?quiz=${q.id}`, "aria-label": `Lancer une partie avec ${q.title}`, title: "Lancer une partie" }, icon("play"))
-                  : null,
-                el("button", { class: "icon-btn", type: "button", "aria-label": `Partager ${q.title}`, title: "Partager le fichier du quiz", onclick: () => exportQuiz(q) }, icon("share"))
-              )
-            ),
-            el("div", { class: "count" }, n === 0 ? "Aucune question" : n === 1 ? "1 question" : `${n} questions`)
-          );
-        })
-      );
-    }
-
-    $("#importInput").addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        const quiz = await importQuizFile(file);
-        toast(`« ${quiz.title} » ajouté à tes quiz.`);
-        render();
-      } catch (err) {
-        toast(err.message || "Import impossible.");
-      }
-      e.target.value = "";
-    });
-
-    render();
-  </script>
+  <script src="js/quizzes.js"></script>
 </body>
 </html>

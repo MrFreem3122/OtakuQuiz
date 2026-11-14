@@ -4,7 +4,7 @@ $$("[data-icon]").forEach((n) => n.append(icon(n.dataset.icon)));
 
 const params = new URLSearchParams(location.search);
 const quizId = params.get("quiz");
-const quiz = quizId && Store.get(quizId);
+let quizTitle = "";
 const SESSION_KEY = `otakuquiz.host.${quizId}`;
 
 let session = null; // { code, hostToken }
@@ -27,14 +27,13 @@ function fatal(message) {
   $("#loadingError").hidden = false;
 }
 
-if (!quiz) {
-  fatal("Ce quiz est introuvable dans ce navigateur.");
-} else {
-  bindTitle(quiz.title);
+if (!quizId) {
+  fatal("Aucun quiz choisi.");
+} else if (requireAdmin()) {
   var conn = connect({
     onOpen() {
       if (session) conn.send({ type: "host:resume", code: session.code, hostToken: session.hostToken });
-      else conn.send({ type: "host:create", quiz });
+      else conn.send({ type: "host:create", quizId, token: Admin.token() });
     },
     onMessage: handle,
   });
@@ -52,6 +51,8 @@ function handle(msg) {
       break;
 
     case "host:state":
+      quizTitle = msg.quizTitle;
+      bindTitle(quizTitle);
       state.total = msg.total;
       state.qIndex = msg.qIndex;
       players = msg.players;
@@ -108,8 +109,12 @@ function handle(msg) {
         // the old game is gone (server restarted or expired): start a fresh one
         sessionStorage.removeItem(SESSION_KEY);
         session = null;
-        conn.send({ type: "host:create", quiz });
+        conn.send({ type: "host:create", quizId, token: Admin.token() });
         return;
+      }
+      if (msg.code === "not_admin") {
+        Admin.clear();
+        return fatal(msg.message);
       }
       if ($('[data-view="loading"]').hidden === false) return fatal(msg.message);
       toast(msg.message);
@@ -149,7 +154,7 @@ $("#copyLink").addEventListener("click", async () => {
 });
 
 $("#shareWhatsApp").addEventListener("click", () => {
-  const text = `🧠 Quiz « ${quiz.title} » sur OtaKu !\nRejoins la partie : ${joinUrl(session.code)}\nCode : ${session.code}`;
+  const text = `🧠 Quiz « ${quizTitle} » sur OtaKu !\nRejoins la partie : ${joinUrl(session.code)}\nCode : ${session.code}`;
   window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
 });
 

@@ -5,7 +5,10 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { attachWebSocketServer } = require("./server/websocket");
-const { handleConnection, rooms } = require("./server/game");
+const { handleConnection, configure, rooms } = require("./server/game");
+const { handleApi, isAdminToken, store } = require("./server/api");
+
+configure({ isAdmin: isAdminToken, loadQuiz: (id) => store.get(id) });
 
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, "public");
@@ -24,8 +27,10 @@ const TYPES = {
   ".webmanifest": "application/manifest+json",
 };
 
-const server = http.createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
+
+  if (await handleApi(req, res, url)) return;
 
   if (url.pathname === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -62,6 +67,12 @@ const server = http.createServer((req, res) => {
 });
 
 attachWebSocketServer(server, "/ws", (ws) => handleConnection(ws));
+
+store.init()
+  .then(() => console.log(`Quiz library: ${store.kind === "neon" ? "Neon database" : "local file data/quizzes.json"}`))
+  .catch((err) => console.error("Could not prepare the quiz library:", err.message));
+
+if (!process.env.ADMIN_CODE) console.warn("ADMIN_CODE is not set: nobody can log in to the admin area.");
 
 server.listen(PORT, () => {
   console.log(`OtakuQuiz running on http://localhost:${PORT}`);

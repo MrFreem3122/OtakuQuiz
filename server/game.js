@@ -11,6 +11,10 @@ const SPEED_POINTS = 500;
 
 const rooms = new Map();
 
+// Set by server.js: how to check an admin token and load a quiz from the library.
+let deps = { isAdmin: () => false, loadQuiz: async () => null };
+function configure(d) { deps = { ...deps, ...d }; }
+
 /* ---------------- helpers ---------------- */
 
 const token = () => crypto.randomBytes(16).toString("hex");
@@ -300,7 +304,7 @@ function handleConnection(ws) {
   const fail = (message, code = "error") => ws.sendJSON({ type: "error", code, message });
 
   ws.on("close", () => {
-    if (!role) return;
+    if (!role || !role.room) return;
     const room = role.room;
     if (!rooms.has(room.code)) return;
     if (role.kind === "host") {
@@ -322,23 +326,30 @@ function handleConnection(ws) {
     try {
       /* ----- host ----- */
       if (msg.type === "host:create") {
-        const quiz = sanitizeQuiz(msg.quiz);
-        const room = {
-          code: newCode(),
-          hostToken: token(),
-          hostWs: ws,
-          quiz,
-          players: new Map(),
-          phase: "lobby",
-          qIndex: -1,
-          timer: null,
-          createdAt: Date.now(),
-          lastActivity: Date.now(),
-        };
-        rooms.set(room.code, room);
-        role = { kind: "host", room };
-        ws.sendJSON({ type: "host:created", code: room.code, hostToken: room.hostToken });
-        ws.sendJSON(hostSnapshot(room));
+        if (!deps.isAdmin(msg.token)) return fail("Seuls les admins peuvent lancer une partie. Reconnecte-toi avec le code admin.", "not_admin");
+        if (role) return; // already hosting from this connection
+        role = { kind: "pending" };
+        deps.loadQuiz(str(msg.quizId, 40)).then((raw) => {
+          if (!raw) { role = null; return fail("Ce quiz n'existe plus dans la bibliothèque.", "quiz_not_found"); }
+          let quiz;
+          try { quiz = sanitizeQuiz(raw); } catch (e) { role = null; return fail(e.message, "invalid_quiz"); }
+          const room = {
+            code: newCode(),
+            hostToken: token(),
+            hostWs: ws,
+            quiz,
+            players: new Map(),
+            phase: "lobby",
+            qIndex: -1,
+            timer: null,
+            createdAt: Date.now(),
+            lastActivity: Date.now(),
+          };
+          rooms.set(room.code, room);
+          role = { kind: "host", room };
+          ws.sendJSON({ type: "host:created", code: room.code, hostToken: room.hostToken });
+          ws.sendJSON(hostSnapshot(room));
+        }).catch((e) => { role = null; console.error(e); fail("Impossible de charger le quiz, réessaie."); });
         return;
       }
 
@@ -486,4 +497,4 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000).unref();
 
-module.exports = { handleConnection, rooms, normalize, sanitizeQuiz };
+module.exports = { handleConnection, configure, rooms, normalize, sanitizeQuiz };

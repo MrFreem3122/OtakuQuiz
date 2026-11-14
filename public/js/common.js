@@ -66,39 +66,77 @@ function icon(name) {
   return el("span", { "aria-hidden": "true", style: "display:contents", html: ICONS[name] || "" });
 }
 
-/* ---------------- quiz storage (in this browser) ---------------- */
+/* ---------------- admin session ---------------- */
 
-const Store = {
-  KEY: "otakuquiz.quizzes",
-
-  all() {
-    try { return JSON.parse(localStorage.getItem(this.KEY)) || []; }
-    catch { return []; }
+const Admin = {
+  KEY: "otakuquiz.admin",
+  get() {
+    try { return JSON.parse(localStorage.getItem(this.KEY)) || null; } catch { return null; }
   },
-  get(id) { return this.all().find((q) => q.id === id) || null; },
-  save(quiz) {
-    const list = this.all();
-    quiz.updatedAt = Date.now();
-    const i = list.findIndex((q) => q.id === quiz.id);
-    if (i >= 0) list[i] = quiz; else list.unshift(quiz);
+  set(session) { localStorage.setItem(this.KEY, JSON.stringify(session)); },
+  clear() { localStorage.removeItem(this.KEY); },
+  name() { return (this.get() || {}).name || ""; },
+  token() { return (this.get() || {}).token || ""; },
+};
+
+// Send admins without a session back to the login screen.
+function requireAdmin() {
+  if (!Admin.token()) {
+    location.href = `quizzes.html?next=${encodeURIComponent(location.pathname.split("/").pop() + location.search)}`;
+    return false;
+  }
+  return true;
+}
+
+/* ---------------- quiz library API (shared by all admins) ---------------- */
+
+const Api = {
+  async request(method, path, body) {
+    let res;
     try {
-      localStorage.setItem(this.KEY, JSON.stringify(list));
+      res = await fetch(path, {
+        method,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${Admin.token()}` },
+        body: body ? JSON.stringify(body) : undefined,
+      });
     } catch {
-      toast("Stockage plein : retire quelques images ou exporte puis supprime d'anciens quiz.");
-      return false;
+      throw new Error("Pas de connexion au serveur. Vérifie ta connexion et réessaie.");
     }
-    return true;
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401 && path !== "/api/login") {
+      Admin.clear();
+      location.href = "quizzes.html";
+      throw new Error(data.error || "Session expirée.");
+    }
+    if (!res.ok) throw new Error(data.error || "Erreur du serveur.");
+    return data;
+  },
+  login(code) { return this.request("POST", "/api/login", { code }); },
+  list() { return this.request("GET", "/api/quizzes").then((d) => d.quizzes); },
+  get(id) { return this.request("GET", `/api/quizzes/${id}`).then((d) => d.quiz); },
+  save(quiz) { return this.request("PUT", `/api/quizzes/${quiz.id}`, { quiz, author: Admin.name() }); },
+  remove(id) { return this.request("DELETE", `/api/quizzes/${id}`); },
+};
+
+function newQuizId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+/* ---------------- old quizzes saved in this browser (first version) ---------------- */
+
+const LocalStore = {
+  KEY: "otakuquiz.quizzes",
+  all() {
+    try { return JSON.parse(localStorage.getItem(this.KEY)) || []; } catch { return []; }
   },
   remove(id) {
     localStorage.setItem(this.KEY, JSON.stringify(this.all().filter((q) => q.id !== id)));
   },
-  newId() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  },
 };
 
 function exportQuiz(quiz) {
-  const data = JSON.stringify({ format: "otakuquiz", version: 1, quiz }, null, 2);
+  const clean = { title: quiz.title, description: quiz.description || "", questions: quiz.questions };
+  const data = JSON.stringify({ format: "otakuquiz", version: 1, quiz: clean }, null, 2);
   const name = (quiz.title || "quiz").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-") || "quiz";
   const blob = new Blob([data], { type: "application/json" });
   const file = new File([blob], `${name}.otakuquiz.json`, { type: "application/json" });
@@ -112,15 +150,35 @@ function exportQuiz(quiz) {
   a.remove();
 }
 
+// Read an exported file and add it to the shared library.
 async function importQuizFile(file) {
-  const text = await file.text();
-  const data = JSON.parse(text);
+  const data = JSON.parse(await file.text());
   const quiz = data && data.format === "otakuquiz" ? data.quiz : data;
-  if (!quiz || !Array.isArray(quiz.questions)) throw new Error("Ce fichier n'est pas un quiz OtakuQuiz.");
-  quiz.id = Store.newId();
-  quiz.title = String(quiz.title || "Quiz importé");
-  Store.save(quiz);
-  return quiz;
+  if (!quiz || !Array.isArray(quiz.questions)) throw new Error("Ce fichier n'est pas un quiz OtaKu.");
+  const out = { id: newQuizId(), title: String(quiz.title || "Quiz importé"), description: quiz.description || "", questions: quiz.questions };
+  out.thumb = await makeThumb(out);
+  await Api.save(out);
+  return out;
+}
+
+// Small square preview of the first image of a quiz, for the library list.
+async function makeThumb(quiz) {
+  const src = (quiz.questions || []).find((q) => q.image)?.image;
+  if (!src) return "";
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 96;
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = size;
+      const s = Math.min(img.width, img.height);
+      canvas.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+      resolve(canvas.toDataURL("image/jpeg", 0.7));
+    };
+    img.onerror = () => resolve("");
+    img.crossOrigin = "anonymous";
+    img.src = src;
+  });
 }
 
 // Resize an image file to a small JPEG data URL so quizzes stay light.
