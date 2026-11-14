@@ -63,4 +63,3 @@ public/              # pages web
 ## Prochaines étapes
 
 - Comptes (email + mot de passe) et quiz sauvegardés en ligne
-- Jeu du Loup-Garou sur la même base (salons, codes, joueurs)
